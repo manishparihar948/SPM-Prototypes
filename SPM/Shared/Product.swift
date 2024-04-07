@@ -25,6 +25,24 @@ struct Product: Codable, Identifiable {
     var firstImage: String {
         images.first ?? Constants.randomImage
     }
+    
+    // mock product to add in SpotifyPlayListView
+    static var mock: Product {
+        // control + M  to open in straight line
+        Product(
+            id: 123,
+            title: "Example Product Title",
+            description: "This is some mock product",
+            price: 999,
+            discountPercentage: 15,
+            rating: 4.5,
+            stock: 50,
+            brand: "Apple",
+            category: "Electronic Devices",
+            thumbnail: Constants.randomImage,
+            images: [Constants.randomImage,Constants.randomImage,Constants.randomImage]
+        )
+    }
 }
 
 struct ProductRow: Identifiable {
