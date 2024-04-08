@@ -6,7 +6,10 @@
 //
 
 import SwiftUI
+import SwiftfulUI
+import SwiftfulRouting
 
+/*
 struct ContentView: View {
 
     @State private var users : [User] = []
@@ -14,6 +17,7 @@ struct ContentView: View {
     
     var body: some View {
         ScrollView {
+            
             VStack {
                 ForEach(users) { user in
                     Text(user.firstName)
@@ -36,7 +40,23 @@ struct ContentView: View {
         }
     }
 }
+*/
+
+struct ContentView: View {
+    @Environment(\.router) var router
+    var body: some View {
+        List {
+            Button("Open Spotify") {
+                router.showScreen(.fullScreenCover) { _ in
+                        SpotifyHomeView()
+                }
+            }
+        }
+    }
+}
 
 #Preview {
-    ContentView()
+    RouterView { _ in
+        ContentView()
+    }
 }
