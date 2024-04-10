@@ -6,12 +6,18 @@
 //
 
 import SwiftUI
+import SwiftfulUI
 
 struct BumbleHomeView: View {
     
     @State private var filters : [String] = ["Everyone", "Trending"]
     // @State private var selectedFilter = "Everyone" // instead we use to store user filters into AppStorage
     @AppStorage("bumble_home_filter") private var selectedFilter = "Everyone"
+    
+    @State private var allUsers: [User] = []
+    @State private var selectedIndex: Int = 0 // to make previous, current and next view in memorey and rest will load when profile calls
+    @State private var cardOffsets: [Int:Bool] = [:] // Maked dictionary of integer and boolean , UserId: (Direction is Right == TRUE)
+    @State private var currentSwipeOffset: CGFloat = 0 // not required now
     
     var body: some View {
         ZStack {
@@ -23,13 +29,57 @@ struct BumbleHomeView: View {
                 BumbleFilterView(options: filters, selection: $selectedFilter)
                     .background(Divider(), alignment: .bottom)
                 
-                BumbleCardView()
+                // BumbleCardView()
                 
-                Spacer()
-                
-                
+                ZStack{
+                    if !allUsers.isEmpty {
+                        ForEach(Array(allUsers.enumerated()), id: \.offset) { (index, user) in
+                            
+                            let isPrevious = (selectedIndex - 1) == index
+                            let isCurrent = selectedIndex == index
+                            let isNext = (selectedIndex + 1) == index
+                            
+                            if isPrevious || isCurrent || isNext {
+                                let offsetValue = cardOffsets[user.id]
+                                
+                                userProfileCell(user: user ,index: index)
+                                    .zIndex(Double(allUsers.count - index)) // We want to reverse the order coz without this, it will show user profile in sequence which we dont want. Example 100 - 0,
+                                    .offset(x: offsetValue == nil ? 0 : offsetValue == true ? 900 : -900)
+                            }
+                        }
+                    } else {
+                        ProgressView()
+                    }
+                    
+                    overlaySwipingIndicators
+                            .zIndex(999999)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(8)
+                .animation(.smooth, value: currentSwipeOffset)
             }
             .padding(8)
+        }
+        .task {
+            await getData()
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+    
+    
+    private func userDidSelect(index: Int, isLike: Bool) {
+        let user = allUsers[index]
+        cardOffsets[user.id] = isLike
+        
+        selectedIndex += 1
+    }
+    
+    private func getData() async {
+        guard allUsers.isEmpty else { return }
+        do {
+            allUsers =  try await DatabaseHelper().getUsers()
+        } catch  {
+            
         }
     }
     
@@ -70,12 +120,84 @@ struct BumbleHomeView: View {
         .fontWeight(.medium)
         .foregroundStyle(.bumbleBlack)
     }
+    
+    private func userProfileCell(user: User ,index:Int) -> some View {
+        /*
+         Rectangle()
+         .fill(index == 0 ? Color.red : Color.blue)
+         .overlay(
+         Text("\(currentSwipeOffset)")
+         )
+         */
+        BumbleCardView(
+            user: user,
+            onSendAComplimentPressed: nil,
+            onSuperLikePressed: nil,
+            onXmarkPressed: {
+                userDidSelect(index: index, isLike: false)
+            },
+            onCheckmarkPressed: {
+                userDidSelect(index: index, isLike: true)
+            },
+            onHideAndReportPressed: {
+                
+            }
+        )
+        .withDragGesture(
+            .horizontal,
+            minimumDistance: 10, // use minimum distance otherwise scroll will not work with DragGesture
+            resets: true,
+            //animation: <#T##Animation#>,
+            rotationMultiplier: 1.05,
+            //scaleMultiplier: 0.8,
+            onChanged: { dragOffset in
+                currentSwipeOffset = dragOffset.width
+            },
+            onEnded: { dragOffset in
+                if dragOffset.width < -50 {
+                    userDidSelect(index: index, isLike: false)
+                } else if dragOffset.width > 50 {
+                    userDidSelect(index: index, isLike: true)
+                }
+                
+            }
+        )
+    }
+    
+    private var overlaySwipingIndicators : some View {
+        ZStack {
+            Circle()
+                .fill(.bumbleGray.opacity(0.4))
+                .overlay(
+                    Image(systemName: "xmark")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                )
+                .frame(width: 60, height: 60)
+                .scaleEffect(abs(currentSwipeOffset) > 100 ? 1.5 : 1.0)
+                .offset(x: min(-currentSwipeOffset, 150))
+                .offset(x: -100)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            Circle()
+                .fill(.bumbleGray.opacity(0.4))
+                .overlay(
+                    Image(systemName: "checkmark")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                )
+                .frame(width: 60, height: 60)
+                .scaleEffect(abs(currentSwipeOffset) > 100 ? 1.5 : 1.0)
+                .offset(x: max(-currentSwipeOffset, -150))
+                .offset(x: 100)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+    }
 }
 
 #Preview {
     ZStack {
         Color.black.ignoresSafeArea()
-        
         BumbleHomeView()
     }
 }
