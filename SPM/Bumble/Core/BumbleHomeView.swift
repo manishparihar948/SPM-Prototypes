@@ -7,9 +7,11 @@
 
 import SwiftUI
 import SwiftfulUI
+import SwiftfulRouting
 
 struct BumbleHomeView: View {
     
+    @Environment(\.router) var router
     @State private var filters : [String] = ["Everyone", "Trending"]
     // @State private var selectedFilter = "Everyone" // instead we use to store user filters into AppStorage
     @AppStorage("bumble_home_filter") private var selectedFilter = "Everyone"
@@ -90,14 +92,14 @@ struct BumbleHomeView: View {
                     .padding(8)
                     .background(Color.black.opacity(0.001))
                     .onTapGesture {
-                        
+                        router.dismissScreen()
                     }
                 
                 Image(systemName: "arrow.uturn.left")
                     .padding(8)
                     .background(Color.black.opacity(0.001))
                     .onTapGesture {
-                        
+                        router.dismissScreen()
                     }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -113,7 +115,9 @@ struct BumbleHomeView: View {
                 .background(Color.black.opacity(0.001))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .onTapGesture {
-                    
+                    router.showScreen(.push) { _ in
+                        BumbleChatsView()
+                    }
                 }
         }
         .font(.title2)
@@ -196,8 +200,7 @@ struct BumbleHomeView: View {
 }
 
 #Preview {
-    ZStack {
-        Color.black.ignoresSafeArea()
+    RouterView { _ in
         BumbleHomeView()
     }
 }
