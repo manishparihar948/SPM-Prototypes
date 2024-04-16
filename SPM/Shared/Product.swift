@@ -26,6 +26,11 @@ struct Product: Codable, Identifiable {
         images.first ?? Constants.randomImage
     }
     
+    
+    let recentlyAdded: Bool = {
+        return Int.random(in: 1...4) == 1// If the random number is equal to 1 then, recentlyAdded is true, this is equal to 25% of the time
+    }()
+    
     // mock product to add in SpotifyPlayListView
     static var mock: Product {
         // control + M  to open in straight line
